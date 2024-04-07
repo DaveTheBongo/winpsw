@@ -1,254 +1,253 @@
 """ winpsw.py
-    Generates a quantity of passwords including required character types
+    Generates any quantity of any length passwords that include required character types
+    Textbox displays 36 x 20 chrs
+    Symbols are string.puncuation or Winpsw(symbols: str)
     TODO
-    ?buttons for users to input chr_types, eg acceptable symbols ?save to file
+    ?button for user to input acceptable symbols instead of arg
+    ?button for user to save to file
+    convert to exe
 """
+
 import customtkinter as ctk
 import secrets
 
 
-def make_str(str_range: list) -> str:
-    return "".join(
-        [chr(ch) for sublist in str_range for ch in range(sublist[0], sublist[-1] + 1)]
-    )
-
-
-symbols = make_str([[33, 47], [58, 64], [91, 96], [123, 126], [163], [166], [172]])
-lowercase = make_str([[97, 122]])
-uppercase = make_str([[65, 90]])
-digits = make_str([[48, 57]])
-
-app = ctk.CTk()
-app.geometry("400x600")
-app.resizable(False, False)
-app.title("Password Generator")
-app.eval("tk::PlaceWindow . center")
-check_lowercase = ctk.IntVar(value=True)
-cb_lowercase = ctk.CTkCheckBox(app)
-check_digits = ctk.IntVar(value=True)
-cb_digits = ctk.CTkCheckBox(app)
-check_uppercase = ctk.IntVar(value=True)
-cb_uppercase = ctk.CTkCheckBox(app)
-check_symbols = ctk.IntVar(value=True)
-cb_symbols = ctk.CTkCheckBox(app)
-e_length = ctk.CTkEntry(app)
-e_quantity = ctk.CTkEntry(app)
-textbox = ctk.CTkTextbox(app)
-textbox_output_line = 1
-
-
 def main():
-    run_app()
+    Winpsw("""!"#$%&'()*+,-./:;<=>?@[]^_`{|}~¼½¾±""")
 
 
-def run_app() -> None:
-    myfont = ("Tahoma", 14)
-    textcol = "#5da3d1"
+class Winpsw(ctk.CTk):
+    def __init__(self, symbols=None):
+        super().__init__()
+        self.geometry("400x640")
+        self.resizable(False, False)
+        self.title("Password Generator")
+        self.eval("tk::PlaceWindow . center")  # Load center screen
+        self.lowercase_chk = ctk.CTkCheckBox(self)
+        self.lowercase_val = ctk.IntVar(value=True)  # True = check box
+        self.lowercase = self.make_str([[97, 122]])  # equiv string.lowercase
+        self.digits_chk = ctk.CTkCheckBox(self)
+        self.digits_val = ctk.IntVar(value=True)
+        self.digits = self.make_str([[48, 57]])  # equiv string.digits
+        self.uppercase_chk = ctk.CTkCheckBox(self)
+        self.uppercase_val = ctk.IntVar(value=True)
+        self.uppercase = self.make_str([[65, 90]])  # equiv string.uppercase
+        self.symbols_chk = ctk.CTkCheckBox(self)
+        self.symbols_val = ctk.IntVar(value=True)
+        if symbols and self.check_ascii(symbols):  # valid ascii symbols
+            self.symbols = symbols  # use provided param
+        else:
+            self.symbols = self.make_str(
+                [
+                    [33, 47],
+                    [58, 64],
+                    [91, 96],
+                    [123, 126],
+                    [163],
+                    [166],
+                    [172],
+                ]
+            )  # equiv string.punctuation
+        self.checkboxes = {
+            "lowercase": [self.lowercase_chk, self.lowercase_val, self.lowercase],
+            "digits": [self.digits_chk, self.digits_val, self.digits],
+            "uppercase": [self.uppercase_chk, self.uppercase_val, self.uppercase],
+            "symbols": [self.symbols_chk, self.symbols_val, self.symbols],
+        }
+        self.e_length = ctk.CTkEntry(self)
+        self.e_quantity = ctk.CTkEntry(self)
+        self.textbox = ctk.CTkTextbox(self)
+        self.textbox_line = 1  # textbox does not show line 0 ???
 
-    rx1 = 0.05
-    rx2 = 0.53
-    ry1 = 0.05
-    ry2 = 0.10
-    ry3 = 0.15
-    ry4 = 0.20
-    ry5 = 0.27
-    ry6 = 0.34
-    rx3 = 0.28
-    rx4 = 0.51
-    rx5 = 0.845
-    ry7 = 0.41
-    ry8 = 0.45
+        self.default_types = ["lowercase", "digits"]
+        self.draw_widgets()
+        self.mainloop()
 
-    l_cb = ctk.CTkLabel(
-        app, text="Types of character required:", font=myfont, width=30, anchor="w"
-    )
+    def make_str(self, str_range: list) -> str:
+        """create str of ascii chrs"""
+        return "".join(
+            [
+                chr(ch)
+                for sublist in str_range
+                for ch in range(sublist[0], sublist[~0] + 1)
+            ]
+        )
 
-    l_cb.place(relx=rx1, rely=ry1, anchor="w")
-    cb_lowercase.configure(
-        app,
-        font=myfont,
-        text="Lowercase",
-        variable=check_lowercase,
-    )
-    cb_lowercase.place(relx=rx2, rely=ry1, anchor="w")
+    def check_ascii(self, ascii_chrs):
+        if not isinstance(ascii_chrs, str) or len(ascii_chrs) < 1:
+            print("Invalid symbols")
+            return False
+        for a in ascii_chrs:
+            if not a.isprintable():
+                print(f"Invalid symbol: {a}")
+                return False
+        return True
 
-    cb_digits.configure(
-        app,
-        font=myfont,
-        text="Digits",
-        variable=check_digits,
-    )
-    cb_digits.place(relx=rx2, rely=ry2, anchor="w")
+    def widget(self, widget, t, *args) -> None:
+        """Generate and place widet"""
+        # Common args: app, widget, text, args
+        blue_color = "#5da3d1"
+        var_font = ("Tahoma", 14)
+        fixed_font = ("Courier New", 16)
+        *arg, x, y = args  # {widget defined}, relx, rely
+        match widget:  # widget defined params required
+            case "label":
+                # global: none
+                ref = ctk.CTkLabel(self, text=t, font=var_font)
+            case "radio":
+                # global: var=ctk.StringVar(value="x") (x=default)
+                var, v = arg  # var, val
+                ref = ctk.CTkRadioButton(self, text=t, variable=var, value=v)
+            case "checkbox":
+                # global: ref=ctk.IntVar(value=x), var=ctk.CTkCheckBox(self) (x=True/False)
+                ref, var = arg  # name, var
+                ref.configure(self, text=t, font=var_font, variable=var)
+            case "button":
+                # global: none
+                c, w, r = arg  # action, width, radius
+                ref = ctk.CTkButton(self, text=t, command=c, width=w, corner_radius=r)
+            case "combo":
+                # global: ref=ctk.CTkComboBox(self), var=ctk.StringVar(value="")
+                ref, v, c, var, w, x1 = arg  # name, val, action, var, width, label_start
+                lab = ctk.CTkLabel(self, text=t, font=var_font)
+                lab.place(relx=x1, rely=y, anchor="nw")
+                ref.configure(values=v, font=var_font, command=c, variable=var, width=w)
+            case "entry":
+                # global: ref=ctk.CTkEntry(self)
+                ref, w, x1 = arg  # name, width, label_start
+                lab = ctk.CTkLabel(self, text=t, font=var_font)
+                lab.place(relx=x1, rely=y, anchor="nw")
+                ref.configure(width=w, font=var_font, text_color=blue_color)
+            case "textbox":
+                # global: ref=ctk.CTkTextbox(self)
+                ref, wr, w, h = arg  # name, wrap, width, height
+                ref.configure(
+                    self,
+                    fg_color="transparent",
+                    font=fixed_font,
+                    text_color=blue_color,
+                    wrap=wr,
+                    width=w,
+                    height=h,
+                    corner_radius=5,
+                )
+        ref.place(relx=x, rely=y, anchor="nw")
 
-    cb_uppercase.configure(
-        app,
-        font=myfont,
-        text="Uppercase",
-        variable=check_uppercase,
-    )
-    cb_uppercase.place(relx=rx2, rely=ry3, anchor="w")
+    def draw_widgets(self) -> None:
+        # relx and rely widget placement
+        rx1, rx2, rx3, rx4 = 0.05, 0.28, 0.51, 0.74
+        ry1, ry2, ry3, ry4 = 0.03, 0.08, 0.13, 0.18  # checkboxes
+        ry5, ry6 = 0.24, 0.30  # entrys
+        ry7 = 0.36  # button line
+        ry8 = 0.41  # textbox
 
-    cb_symbols.configure(
-        app,
-        font=myfont,
-        text="Symbols",
-        variable=check_symbols,
-    )
-    cb_symbols.place(relx=rx2, rely=ry4, anchor="w")
+        self.widget("label", "Character types required:", rx1, ry1)
+        for kv, ry in zip(self.checkboxes.items(), [ry1, ry2, ry3, ry4]):
+            k, v = kv
+            self.widget("checkbox", k, v[0], v[1], rx3, ry)
+        self.widget("entry", "Password Length:", self.e_length, 80, rx1, rx3, ry5)
+        self.widget("entry", "Password Quantity:", self.e_quantity, 80, rx1, rx3, ry6)
+        self.widget("button", "Run", self.run, 80, 15, rx1, ry7)
+        self.widget("button", "Copy", self.copy, 80, 15, rx2, ry7)
+        self.widget("button", "Clear", self.clear, 80, 15, rx3, ry7)
+        self.widget("button", "Exit", exit, 80, 15, rx4, ry7)
+        self.widget("textbox", "", self.textbox, "none", 375, 375, rx1, ry8)
 
-    l_length = ctk.CTkLabel(
-        app, text="Length of password:", font=myfont, width=100, anchor="w"
-    )
-    l_length.place(relx=rx1, rely=ry5, anchor="w")
-    e_length.configure(width=80, font=myfont, text_color=textcol)
-    e_length.place(relx=rx4, rely=ry5, anchor="w")
+    def text_line(self, text: str) -> None:
+        """appends text + \n to textbox"""
+        count_lines = sum(1 for char in text if char == "\n") + 1
+        self.textbox.configure(state="normal")
+        self.textbox.insert(f"{self.textbox_line}.0", f"{text}\n")
+        self.textbox.configure(state="disabled")
+        self.textbox_line += count_lines
 
-    l_quantity = ctk.CTkLabel(
-        app, text="Number of passwords:", font=myfont, width=100, anchor="w"
-    )
-    l_quantity.place(relx=rx1, rely=ry6, anchor="w")
-    e_quantity.configure(width=80, font=myfont, text_color=textcol)
-    e_quantity.place(relx=rx4, rely=ry6, anchor="w")
+    def get_char_types(self) -> None:
+        """set char_types for checkboxes or default if none set"""
 
-    b_run = ctk.CTkButton(app, text="Run", command=run, width=80, corner_radius=5)
-    b_run.place(relx=rx1, rely=ry7, anchor="w")
+        def set_default_types() -> int:
+            """set chr_types to default_types"""
+            qty = 0
+            for k, v in self.checkboxes.items():
+                if k in self.default_types:
+                    self.chr_types[k] = True
+                    v[0].toggle()  # cb_type
+                    v[0].configure()
+                    qty += 1
+            return qty
 
-    b_copy = ctk.CTkButton(app, text="Copy", command=copy, width=80, corner_radius=5)
-    b_copy.place(relx=rx3, rely=ry7, anchor="w")
+        self.selection = ""  # reset for this run
+        self.chr_types = {}
+        for k, v in self.checkboxes.items():
+            self.chr_types[k] = v[1].get()  # check_type
+        qty_types = sum(v for k, v in self.chr_types.items())
+        if not qty_types:  # if no checkboxes set use default
+            qty_types = set_default_types()
+        return qty_types
 
-    b_run = ctk.CTkButton(app, text="Clear", command=clear, width=80, corner_radius=5)
-    b_run.place(relx=rx4, rely=ry7, anchor="w")
+    def get_min_size(self, entry, qty: int) -> int:
+        """return entry size or qty if not set, invalid or insufficient"""
 
-    b_exit = ctk.CTkButton(app, text="Exit", command=exit, width=80, corner_radius=5)
-    b_exit.place(relx=rx5, rely=ry7, anchor="center")
+        def valid_number(num: str) -> int:
+            """return int >= 0"""
+            return int(num) if num.isdigit() and int(num) > 0 else 0
 
-    textbox.configure(
-        state="disabled",
-        fg_color="transparent",
-        font=("Courier New", 16),
-        text_color=textcol,
-        wrap="none",
-        width=360,
-        height=308,
-        corner_radius=5,
-    )
-    textbox.place(relx=rx1, rely=ry8, anchor="nw")
+        return max(valid_number(entry.get()), qty)
 
-    app.mainloop()
+    def create_selection_str(self) -> str:
+        """add each selection type to str"""
+        for k, v in self.checkboxes.items():
+            if self.chr_types[k]:
+                self.selection += v[2]  # type
 
+    def create_valid_password(self, length: int) -> str:
+        """generate a password of size length including all required character types"""
+        while True:
+            # set reqd vals to false, then to true when found in psw
+            sym: bool = not self.chr_types["symbols"]
+            lc: bool = not self.chr_types["lowercase"]
+            uc: bool = not self.chr_types["uppercase"]
+            dig: bool = not self.chr_types["digits"]
+            psw: str = "".join(secrets.choice(self.selection) for _ in range(length))
+            # ensure psw contains the required types
+            for char in psw:
+                if not sym:
+                    if char in self.symbols:
+                        sym = True
+                if not lc:
+                    if char in self.lowercase:
+                        lc = True
+                if not uc:
+                    if char in self.uppercase:
+                        uc = True
+                if not dig:
+                    if char in self.digits:
+                        dig = True
+                if all([lc, dig, sym, uc]):
+                    return psw
 
-def text_line(text: str) -> None:
-    """appends text + \n to textbox"""
-    global textbox_output_line
-    num_lines = sum(1 for char in text if char == "\n") + 1
-    textbox.configure(state="normal")
-    textbox.insert(f"{textbox_output_line}.0", f"{text}\n")
-    textbox.configure(state="disabled")
-    textbox_output_line += num_lines
-    return
+    def run(self) -> None:
+        """validate input and generate password(s)"""
+        qty_types = self.get_char_types()
+        length = self.get_min_size(self.e_length, qty_types)
+        quantity = self.get_min_size(self.e_quantity, 1)
 
+        self.create_selection_str()
 
-def isvalid(digit: str) -> int:
-    """check digit and return int > 0 or None"""
-    if not digit.isdigit():
-        return None
-    if int(digit) < 1:
-        return None
-    return int(digit)
+        for _ in range(quantity):
+            self.text_line(f"{self.create_valid_password(length)}")
 
+    def copy(self) -> None:
+        """copies text in textbox to clipboard"""
+        data = self.textbox.get(1.0, "end").strip("\n")
+        self.clipboard_clear()
+        self.clipboard_append(data)
 
-def create_selection_str(chr_types: dict) -> str:
-    """add each selection type to str"""
-    selection = ""
-    if chr_types["symbols"]:
-        selection += symbols
-    if chr_types["lowercase"]:
-        selection += lowercase
-    if chr_types["uppercase"]:
-        selection += uppercase
-    if chr_types["digits"]:
-        selection += digits
-    return selection
-
-
-def run() -> None:
-    """validate input and generate password(s)"""
-    chr_types: dict = {}
-    chr_types["symbols"] = check_symbols.get()
-    chr_types["lowercase"] = check_lowercase.get()
-    chr_types["uppercase"] = check_uppercase.get()
-    chr_types["digits"] = check_digits.get()
-    qty_types = sum(v for k, v in chr_types.items())
-
-    if qty_types == 0:
-        cb_lowercase.toggle()
-        cb_lowercase.configure()
-        chr_types["lowercase"] = True
-        qty_types += 1
-        cb_digits.toggle()
-        cb_digits.configure()
-        chr_types["digits"] = True
-        qty_types += 1
-        text_line(f"Selection set to lowercase & digits")
-
-    length = isvalid(e_length.get())
-    if not length or length < qty_types:
-        length = qty_types
-        text_line(f"Length set to {qty_types}")
-
-    quantity = isvalid(e_quantity.get())
-    if not quantity:
-        quantity = 1
-        text_line(f"Number set to 1")
-
-    selection = create_selection_str(chr_types)
-
-    for _ in range(quantity):
-        text_line(f"{valid_password(selection, chr_types, length)}")
-
-
-def valid_password(selection: str, chr_types: dict, length: int) -> str:
-    """generate a password of size length including all required character types"""
-    while True:
-        sym: bool = not chr_types["symbols"]
-        lc: bool = not chr_types["lowercase"]
-        uc: bool = not chr_types["uppercase"]
-        dig: bool = not chr_types["digits"]
-        psw: str = "".join(secrets.choice(selection) for _ in range(length))
-        # ensure psw contains the required types
-        for char in psw:
-            if not sym:
-                if char in symbols:
-                    sym = True
-            if not lc:
-                if char in lowercase:
-                    lc = True
-            if not uc:
-                if char in uppercase:
-                    uc = True
-            if not dig:
-                if char in digits:
-                    dig = True
-            if all([lc, dig, sym, uc]):
-                return psw
-
-
-def clear() -> None:
-    """delete text in textbox and reset line count"""
-    global textbox_output_line
-    textbox.configure(state="normal")
-    textbox.delete(f"0.0", f"end")
-    textbox.configure(state="disabled")
-    textbox_output_line = 1
-    return
-
-
-def copy() -> None:
-    """copies text in textbox to clipboard"""
-    data = textbox.get(1.0, "end").strip("\n")
-    app.clipboard_clear()
-    app.clipboard_append(data)
-    return
+    def clear(self) -> None:
+        """delete text in textbox and reset line count"""
+        self.textbox.configure(state="normal")
+        self.textbox.delete(f"0.0", f"end")
+        self.textbox.configure(state="disabled")
+        self.textbox_line = 1
 
 
 if __name__ == "__main__":
